@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ACFT Tracker</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+  html, body { background: #fff; color: #000; font-family: 'Courier New', Courier, monospace; max-width: 480px; margin: 0 auto; }
+  body { padding-bottom: 90px; }
+  input, select, textarea { -webkit-appearance: none; border-radius: 0; font-family: 'Courier New', Courier, monospace; }
+  input:focus, select:focus, textarea:focus { outline: 3px solid #000; outline-offset: 2px; }
+  textarea { resize: none; min-height: 80px; }
+  button { cursor: pointer; font-family: 'Courier New', Courier, monospace; }
+
+  /* HEADER */
+  #header { padding: 16px 16px 14px; border-bottom: 3px solid #000; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: #fff; z-index: 50; }
+  #header-title { font-size: 30px; letter-spacing: 5px; font-weight: bold; }
+  #header-sub { font-size: 12px; letter-spacing: 2px; color: #444; margin-top: 2px; }
+  #week-label { font-size: 12px; letter-spacing: 2px; color: #444; margin-bottom: 4px; text-align: center; }
+  #week-controls { display: flex; align-items: center; gap: 8px; }
+  #week-num { font-size: 32px; font-weight: bold; min-width: 36px; text-align: center; }
+  .wk-btn { background: #fff; border: 2px solid #000; width: 40px; height: 40px; font-size: 22px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+  #save-flash { font-size: 13px; font-weight: bold; letter-spacing: 1px; display: none; margin-right: 8px; }
+
+  /* SELECTOR BAR */
+  #selector-bar { padding: 12px 16px; display: flex; gap: 10px; border-bottom: 2px solid #000; }
+  .sel-btn { flex: 1; background: #fff; border: 2px solid #000; color: #000; padding: 12px 10px; font-size: 14px; letter-spacing: 1px; text-align: left; font-weight: bold; }
+  .sel-btn-label { display: block; font-size: 11px; letter-spacing: 2px; color: #555; margin-bottom: 3px; font-weight: normal; }
+
+  /* PROGRESS */
+  #progress-wrap { padding: 12px 16px; background: #f5f5f5; border-bottom: 2px solid #000; display: none; }
+  #progress-label { display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; letter-spacing: 1px; margin-bottom: 8px; }
+  .bar-bg { background: #ccc; height: 8px; border: 1px solid #000; }
+  .bar-fill { height: 100%; background: #000; width: 0%; }
+
+  /* EXERCISE LIST */
+  .ex-row { border-bottom: 2px solid #000; padding: 18px 16px; cursor: pointer; background: #fff; border-left: 6px solid transparent; }
+  .ex-row.done { background: #f0f0f0; border-left-color: #000; }
+  .ex-row-inner { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .ex-content { flex: 1; }
+  .ex-name { font-size: 18px; font-weight: bold; letter-spacing: 1px; }
+  .ex-name.struck { text-decoration: line-through; }
+  .ex-meta { font-size: 14px; color: #444; margin-top: 5px; }
+  .ex-note { font-size: 13px; color: #555; margin-top: 4px; font-style: italic; }
+  .ex-tags { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .ex-tag { font-size: 14px; font-weight: bold; border: 2px solid #000; padding: 3px 8px; }
+  .ex-check-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; }
+  .ex-checkbox { width: 32px; height: 32px; border: 2px solid #000; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; }
+  .ex-checkbox.checked { background: #000; color: #fff; }
+  .ex-arrow { font-size: 14px; color: #888; }
+
+  /* EXPAND PANEL */
+  .ex-expand { background: #f8f8f8; padding: 16px; border-bottom: 2px solid #000; display: none; }
+  .ex-expand.open { display: block; }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .field-label { display: block; font-size: 13px; font-weight: bold; letter-spacing: 2px; margin-bottom: 6px; }
+  .field { background: #fff; border: 2px solid #000; color: #000; padding: 12px 14px; font-size: 18px; width: 100%; display: block; }
+  .field-full { grid-column: 1 / -1; }
+  .btn { background: #fff; border: 2px solid #000; color: #000; padding: 16px; font-size: 15px; letter-spacing: 2px; text-transform: uppercase; width: 100%; display: block; font-weight: bold; margin-bottom: 0; }
+  .btn-solid { background: #000; color: #fff; border: 2px solid #000; padding: 16px; font-size: 15px; letter-spacing: 2px; text-transform: uppercase; width: 100%; display: block; font-weight: bold; }
+
+  /* FEEL */
+  #feel-section { padding: 16px; border-top: 2px solid #000; }
+  #feel-title { font-size: 15px; font-weight: bold; letter-spacing: 2px; margin-bottom: 14px; }
+  #feel-row { display: flex; gap: 6px; margin-bottom: 14px; }
+  .feel-btn { flex: 1; padding: 12px 4px; background: #fff; border: 2px solid #000; font-size: 24px; text-align: center; }
+  .feel-btn.sel { background: #000; }
+
+  /* SECTION PAGES */
+  .section-pad { padding: 16px; }
+  .section-title { font-size: 24px; font-weight: bold; letter-spacing: 3px; margin-bottom: 4px; }
+  .section-sub { font-size: 13px; letter-spacing: 2px; color: #555; margin-bottom: 20px; }
+
+  /* STANDARDS GRID */
+  .standards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+  .standard-card { border: 2px solid #000; padding: 14px; }
+  .standard-event { font-size: 13px; color: #444; margin-bottom: 4px; letter-spacing: 1px; }
+  .standard-val { font-size: 26px; font-weight: bold; }
+  .standard-unit { font-size: 12px; color: #555; }
+
+  /* BENCHMARK CARDS */
+  .bench-card { border: 2px solid #000; padding: 16px; margin-bottom: 12px; }
+  .bench-card-title { font-size: 14px; font-weight: bold; letter-spacing: 2px; margin-bottom: 14px; }
+  .bench-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .bench-event { font-size: 15px; }
+  .bench-val { font-size: 16px; font-weight: bold; }
+  .bench-notes { font-size: 14px; color: #555; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ccc; }
+
+  /* HISTORY CARDS */
+  .hist-card { border: 2px solid #000; padding: 14px; margin-bottom: 12px; }
+  .hist-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .hist-title { font-size: 17px; font-weight: bold; letter-spacing: 1px; }
+  .hist-sub { font-size: 14px; color: #555; margin-top: 3px; }
+  .hist-feel { font-size: 26px; }
+  .hist-done { font-size: 14px; font-weight: bold; text-align: right; }
+  .hist-ex { font-size: 14px; margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .hist-ex.incomplete { color: #999; text-decoration: line-through; }
+  .hist-ex-val { font-weight: bold; }
+  .hist-notes { font-size: 14px; color: #555; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ccc; }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 60px 0; font-size: 14px; letter-spacing: 2px; color: #888; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: flex-end; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #fff; border-top: 3px solid #000; width: 100%; max-width: 480px; margin: 0 auto; padding: 20px; max-height: 70vh; overflow-y: auto; }
+  .modal-title { font-size: 13px; font-weight: bold; letter-spacing: 3px; color: #555; margin-bottom: 16px; }
+  .modal-item { padding: 18px 0; border-bottom: 2px solid #000; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+  .modal-item:last-child { border-bottom: none; }
+  .modal-item.selected { background: #000; color: #fff; margin: 0 -20px; padding: 18px 20px; }
+  .modal-item-name { font-size: 20px; font-weight: bold; letter-spacing: 1px; }
+  .modal-item-sub { font-size: 14px; color: #555; margin-top: 3px; }
+  .modal-item.selected .modal-item-sub { color: #ccc; }
+  .modal-check { font-size: 22px; font-weight: bold; }
+
+  /* BOTTOM NAV */
+  #bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #fff; border-top: 3px solid #000; display: flex; z-index: 100; }
+  .nav-btn { flex: 1; padding: 14px 4px 12px; background: #fff; border: none; border-right: 2px solid #000; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; letter-spacing: 1px; color: #888; text-transform: uppercase; }
+  .nav-btn:last-child { border-right: none; }
+  .nav-btn.active { background: #000; color: #fff; }
+  .nav-btn-icon { font-size: 22px; }
+
+  /* TABS */
+  .tab-page { display: none; }
+  .tab-page.active { display: block; }
+
+  /* BENCHMARK FORM */
+  #bench-form { border: 2px solid #000; padding: 16px; margin-top: 14px; display: none; }
+  #bench-form.open { display: block; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div>
+    <div id="header-title">ACFT</div>
+    <div id="header-sub">COMBAT FITNESS TRACKER</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span id="save-flash">SAVED ✓</span>
+    <div>
+      <div id="week-label">WEEK</div>
+      <div id="week-controls">
+        <button class="wk-btn" onclick="changeWeek(-1)">−</button>
+        <span id="week-num">1</span>
+        <button class="wk-btn" onclick="changeWeek(1)">+</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WORKOUT TAB -->
+<div id="tab-workout" class="tab-page active">
+  <div id="selector-bar">
+    <button class="sel-btn" onclick="openModal('phase')">
+      <span class="sel-btn-label">PHASE</span>
+      <span id="phase-label">Foundation ▾</span>
+    </button>
+    <button class="sel-btn" onclick="openModal('day')">
+      <span class="sel-btn-label">DAY</span>
+      <span id="day-label">MON — Lower Body ▾</span>
+    </button>
+  </div>
+
+  <div id="progress-wrap">
+    <div id="progress-label"><span>PROGRESS</span><span id="progress-count">0/0</span></div>
+    <div class="bar-bg"><div class="bar-fill" id="progress-bar"></div></div>
+  </div>
+
+  <div id="exercise-list"></div>
+
+  <div id="feel-section">
+    <div id="feel-title">HOW DO YOU FEEL?</div>
+    <div id="feel-row">
+      <button class="feel-btn" data-feel="1" onclick="setFeel(1)">💀</button>
+      <button class="feel-btn" data-feel="2" onclick="setFeel(2)">😓</button>
+      <button class="feel-btn" data-feel="3" onclick="setFeel(3)">😐</button>
+      <button class="feel-btn" data-feel="4" onclick="setFeel(4)">💪</button>
+      <button class="feel-btn" data-feel="5" onclick="setFeel(5)">🔥</button>
+    </div>
+    <label class="field-label">SESSION NOTES</label>
+    <textarea class="field" id="session-notes" placeholder="Overall notes..." oninput="updateSessionNotes(this.value)"></textarea>
+  </div>
+</div>
+
+<!-- BENCHMARKS TAB -->
+<div id="tab-benchmarks" class="tab-page">
+  <div class="section-pad">
+    <div class="section-title">BENCHMARKS</div>
+    <div class="section-sub">MOCK TEST RESULTS</div>
+
+    <div style="font-size:14px;font-weight:bold;letter-spacing:2px;margin-bottom:12px;">PASSING STANDARDS</div>
+    <div class="standards-grid" id="standards-grid"></div>
+
+    <button class="btn-solid" id="log-test-btn" onclick="toggleBenchForm()" style="margin-bottom:0;">+ Log Mock Test</button>
+
+    <div id="bench-form">
+      <div id="bench-form-fields"></div>
+      <div style="margin-bottom:14px;">
+        <label class="field-label">NOTES</label>
+        <textarea class="field" id="bench-notes" placeholder="Conditions, weak events..."></textarea>
+      </div>
+      <button class="btn-solid" onclick="saveBenchmark()">Save Results</button>
+    </div>
+
+    <div id="benchmark-history" style="margin-top:20px;"></div>
+  </div>
+</div>
+
+<!-- HISTORY TAB -->
+<div id="tab-history" class="tab-page">
+  <div class="section-pad">
+    <div class="section-title">HISTORY</div>
+    <div class="section-sub">ALL LOGGED SESSIONS</div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<!-- PHASE MODAL -->
+<div class="modal-overlay" id="phase-modal" onclick="closeModalOutside(event,'phase-modal')">
+  <div class="modal">
+    <div class="modal-title">SELECT PHASE</div>
+    <div id="phase-modal-items"></div>
+  </div>
+</div>
+
+<!-- DAY MODAL -->
+<div class="modal-overlay" id="day-modal" onclick="closeModalOutside(event,'day-modal')">
+  <div class="modal">
+    <div class="modal-title">SELECT DAY</div>
+    <div id="day-modal-items"></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav id="bottom-nav">
+  <button class="nav-btn active" id="nav-workout" onclick="switchTab('workout')">
+    <span class="nav-btn-icon">▣</span>Workout
+  </button>
+  <button class="nav-btn" id="nav-benchmarks" onclick="switchTab('benchmarks')">
+    <span class="nav-btn-icon">◎</span>Tests
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="switchTab('history')">
+    <span class="nav-btn-icon">≡</span>History
+  </button>
+</nav>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+
+const PHASES = [
+  { id: 1, name: "Foundation", weeks: "1–5" },
+  { id: 2, name: "Build",       weeks: "6–11" },
+  { id: 3, name: "Peak",        weeks: "12–16" },
+];
+
+const WEEK_TEMPLATES = {
+  1: [
+    { day:"MON", label:"Lower Body", exercises:[
+      { name:"Deadlift", sets:3, reps:5, note:"Light, form focus" },
+      { name:"Romanian Deadlift", sets:3, reps:8 },
+      { name:"Goblet Squat", sets:3, reps:10 },
+      { name:"Farmer Carry", sets:3, unit:"40m" },
+    ]},
+    { day:"TUE", label:"Cardio + Core", exercises:[
+      { name:"Easy Run", unit:"20–25 min", isRun:true },
+      { name:"Plank Hold", sets:3, unit:"45 sec", isTime:true },
+      { name:"Dead Bugs", sets:3, reps:10, note:"per side" },
+      { name:"Hollow Body Hold", sets:3, unit:"20 sec", isTime:true },
+    ]},
+    { day:"WED", label:"Upper Body", exercises:[
+      { name:"Hand-Release Push-Ups", sets:4, note:"Stop 2 short of failure" },
+      { name:"Dumbbell Rows", sets:3, reps:10 },
+      { name:"Overhead Press", sets:3, reps:8 },
+      { name:"Band Pull-Aparts", sets:3, reps:15 },
+    ]},
+    { day:"THU", label:"Power + SDC", exercises:[
+      { name:"Med Ball Chest Pass (10lb)", sets:4, reps:5 },
+      { name:"Med Ball Overhead Slam", sets:3, reps:6 },
+      { name:"Shuttle Sprints", sets:6, unit:"20m", note:"60 sec rest" },
+      { name:"Sled Drag Sub", sets:3, unit:"20m", note:"Band walk or towel drag" },
+    ]},
+    { day:"FRI", label:"Long Run + Accessory", exercises:[
+      { name:"Easy Run", unit:"25–30 min", isRun:true },
+      { name:"Lateral Shuffles", sets:4, unit:"20m" },
+      { name:"Farmer Carry", sets:3, unit:"40m" },
+      { name:"Plank Hold", sets:3, unit:"1 min", isTime:true },
+    ]},
+  ],
+  2: [
+    { day:"MON", label:"Lower Body", exercises:[
+      { name:"Deadlift", sets:4, reps:5, note:"Target 100–120 lbs by end of phase" },
+      { name:"Romanian Deadlift", sets:3, reps:8 },
+      { name:"Goblet Squat", sets:3, reps:12 },
+      { name:"Farmer Carry", sets:4, unit:"40m" },
+    ]},
+    { day:"TUE", label:"Tempo Run + Core", exercises:[
+      { name:"Tempo Run", unit:"15–20 min", isRun:true, note:"Uncomfortable but sustainable" },
+      { name:"Plank Hold", sets:3, unit:"1:30", isTime:true, note:"Building toward 2:00" },
+      { name:"Dead Bugs", sets:3, reps:12, note:"per side" },
+      { name:"Hollow Body Hold", sets:3, unit:"30 sec", isTime:true },
+    ]},
+    { day:"WED", label:"Upper Body", exercises:[
+      { name:"Hand-Release Push-Ups", sets:5, note:"Track max reps on final set" },
+      { name:"Dumbbell Rows", sets:4, reps:10 },
+      { name:"Overhead Press", sets:3, reps:10 },
+      { name:"Band Pull-Aparts", sets:3, reps:20 },
+    ]},
+    { day:"THU", label:"Full SDC Circuit", exercises:[
+      { name:"SDC Circuit", sets:3, unit:"full", note:"Sprint/Drag/Lateral/Carry/Sprint. Time each." },
+      { name:"Med Ball Power Throw", sets:4, reps:5, note:"Track distance" },
+    ]},
+    { day:"FRI", label:"Endurance Run", exercises:[
+      { name:"Easy Run", unit:"30–35 min", isRun:true },
+      { name:"Lateral Shuffles", sets:4, unit:"25m" },
+      { name:"Farmer Carry", sets:4, unit:"40m" },
+      { name:"Plank Hold", sets:3, unit:"2:00", isTime:true },
+    ]},
+  ],
+  3: [
+    { day:"MON", label:"Heavy Deadlift", exercises:[
+      { name:"Deadlift", sets:3, reps:3, note:"Target 140+ lbs x3" },
+      { name:"Med Ball Power Throw", sets:5, reps:5, note:"Target 4.5m+" },
+      { name:"Farmer Carry", sets:3, unit:"40m" },
+    ]},
+    { day:"TUE", label:"Tempo + Core", exercises:[
+      { name:"Tempo Run", unit:"20 min", isRun:true, note:"Faster than Phase 2" },
+      { name:"Plank Hold", sets:3, unit:"2:15–2:30", isTime:true, note:"Buffer above 2:09 min" },
+      { name:"Dead Bugs", sets:3, reps:15, note:"per side" },
+    ]},
+    { day:"WED", label:"Push-Up Peak", exercises:[
+      { name:"Hand-Release Push-Ups", sets:5, note:"Target 12–15 reps, track max" },
+      { name:"Dumbbell Rows", sets:4, reps:10 },
+      { name:"Overhead Press", sets:3, reps:10 },
+    ]},
+    { day:"THU", label:"SDC Test Intensity", exercises:[
+      { name:"SDC Circuit (full)", sets:2, unit:"full", note:"Near test intensity. Sub-3:00." },
+      { name:"Sprint Intervals", sets:6, unit:"25m", note:"Full speed" },
+    ]},
+    { day:"FRI", label:"Race-Pace Run", exercises:[
+      { name:"2-Mile Run", unit:"2 miles", isRun:true, note:"Target sub-21:00" },
+      { name:"Plank Hold", sets:2, unit:"2:00+", isTime:true },
+    ]},
+  ],
+};
+
+const ACFT_STANDARDS = [
+  { event:"Deadlift",    unit:"lbs", minimum:140,  target:180,  lowerIsBetter:false },
+  { event:"Power Throw", unit:"m",   minimum:4.5,  target:6.0,  lowerIsBetter:false },
+  { event:"Push-Ups",    unit:"reps",minimum:10,   target:20,   lowerIsBetter:false },
+  { event:"SDC",         unit:"sec", minimum:180,  target:150,  lowerIsBetter:true  },
+  { event:"Plank",       unit:"sec", minimum:129,  target:150,  lowerIsBetter:false },
+  { event:"2-Mile Run",  unit:"sec", minimum:1260, target:1080, lowerIsBetter:true  },
+];
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+
+const SK = "acft-tracker-v1";
+let state = {
+  currentWeek: 1,
+  currentPhase: 1,
+  currentDay: 0,
+  sessions: {},
+  benchmarks: [],
+};
+let openExIdx = null;
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(SK);
+    if (raw) state = JSON.parse(raw);
+  } catch(e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(SK, JSON.stringify(state));
+    const f = document.getElementById("save-flash");
+    f.style.display = "inline";
+    setTimeout(() => f.style.display = "none", 1200);
+  } catch(e) {}
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+
+function fmtTime(s) {
+  const m = Math.floor(s / 60);
+  return m + ":" + String(s % 60).padStart(2, "0");
+}
+
+function parseTime(str) {
+  if (!str) return null;
+  if (str.includes(":")) {
+    const parts = str.split(":");
+    return parseInt(parts[0]) * 60 + (parseInt(parts[1]) || 0);
+  }
+  return parseFloat(str);
+}
+
+function sessionKey() {
+  return "p" + state.currentPhase + "-d" + state.currentDay + "-w" + state.currentWeek;
+}
+
+function getSession() {
+  return state.sessions[sessionKey()] || {};
+}
+
+function getExLog(idx) {
+  return (getSession().exercises || {})[idx] || {};
+}
+
+function setExLog(idx, field, value) {
+  const sk = sessionKey();
+  if (!state.sessions[sk]) state.sessions[sk] = {};
+  if (!state.sessions[sk].exercises) state.sessions[sk].exercises = {};
+  if (!state.sessions[sk].exercises[idx]) state.sessions[sk].exercises[idx] = {};
+  state.sessions[sk].exercises[idx][field] = value;
+  saveState();
+  updateProgress();
+}
+
+function getTmpl() {
+  return WEEK_TEMPLATES[state.currentPhase][state.currentDay];
+}
+
+// ── WEEK CONTROL ─────────────────────────────────────────────────────────────
+
+function changeWeek(delta) {
+  state.currentWeek = Math.max(1, Math.min(16, state.currentWeek + delta));
+  saveState();
+  document.getElementById("week-num").textContent = state.currentWeek;
+  renderWorkout();
+}
+
+// ── TAB SWITCHING ────────────────────────────────────────────────────────────
+
+function switchTab(name) {
+  ["workout","benchmarks","history"].forEach(t => {
+    document.getElementById("tab-" + t).classList.toggle("active", t === name);
+    document.getElementById("nav-" + t).classList.toggle("active", t === name);
+  });
+  if (name === "benchmarks") renderBenchmarks();
+  if (name === "history") renderHistory();
+}
+
+// ── MODALS ───────────────────────────────────────────────────────────────────
+
+function openModal(type) {
+  if (type === "phase") {
+    const container = document.getElementById("phase-modal-items");
+    container.innerHTML = "";
+    PHASES.forEach(p => {
+      const div = document.createElement("div");
+      div.className = "modal-item" + (state.currentPhase === p.id ? " selected" : "");
+      div.innerHTML = `<div><div class="modal-item-name">${p.name}</div><div class="modal-item-sub">Weeks ${p.weeks}</div></div>${state.currentPhase === p.id ? '<span class="modal-check">✓</span>' : ""}`;
+      div.onclick = () => {
+        state.currentPhase = p.id;
+        state.currentDay = 0;
+        saveState();
+        closeModal("phase-modal");
+        updateSelectors();
+        renderWorkout();
+      };
+      container.appendChild(div);
+    });
+    document.getElementById("phase-modal").classList.add("open");
+  } else {
+    const container = document.getElementById("day-modal-items");
+    container.innerHTML = "";
+    WEEK_TEMPLATES[state.currentPhase].forEach((d, i) => {
+      const div = document.createElement("div");
+      div.className = "modal-item" + (state.currentDay === i ? " selected" : "");
+      div.innerHTML = `<div><div class="modal-item-name">${d.day}</div><div class="modal-item-sub">${d.label}</div></div>${state.currentDay === i ? '<span class="modal-check">✓</span>' : ""}`;
+      div.onclick = () => {
+        state.currentDay = i;
+        saveState();
+        closeModal("day-modal");
+        openExIdx = null;
+        updateSelectors();
+        renderWorkout();
+      };
+      container.appendChild(div);
+    });
+    document.getElementById("day-modal").classList.add("open");
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove("open");
+}
+
+function closeModalOutside(e, id) {
+  if (e.target === document.getElementById(id)) closeModal(id);
+}
+
+// ── SELECTORS ────────────────────────────────────────────────────────────────
+
+function updateSelectors() {
+  const p = PHASES[state.currentPhase - 1];
+  const d = getTmpl();
+  document.getElementById("phase-label").textContent = p.name + " ▾";
+  document.getElementById("day-label").textContent = d.day + " — " + d.label + " ▾";
+}
+
+// ── PROGRESS ────────────────────────────────────────────────────────────────
+
+function updateProgress() {
+  const tmpl = getTmpl();
+  const total = tmpl.exercises.length;
+  const sess = getSession();
+  const done = Object.values(sess.exercises || {}).filter(e => e.completed).length;
+  const wrap = document.getElementById("progress-wrap");
+  wrap.style.display = total > 0 ? "block" : "none";
+  document.getElementById("progress-count").textContent = done + "/" + total + (done === total ? " ✓" : "");
+  document.getElementById("progress-bar").style.width = ((done / total) * 100) + "%";
+}
+
+// ── WORKOUT RENDER ───────────────────────────────────────────────────────────
+
+function renderWorkout() {
+  updateSelectors();
+  updateProgress();
+  const tmpl = getTmpl();
+  const list = document.getElementById("exercise-list");
+  list.innerHTML = "";
+
+  tmpl.exercises.forEach((ex, i) => {
+    renderExRow(list, ex, i);
+  });
+
+  // Restore feel + notes
+  const sess = getSession();
+  document.querySelectorAll(".feel-btn").forEach(btn => {
+    btn.classList.toggle("sel", parseInt(btn.dataset.feel) === sess.feel);
+  });
+  document.getElementById("session-notes").value = sess.notes || "";
+}
+
+function renderExRow(container, ex, i) {
+  const log = getExLog(i);
+  const isOpen = openExIdx === i;
+
+  // Row
+  const row = document.createElement("div");
+  row.className = "ex-row" + (log.completed ? " done" : "");
+  row.id = "ex-row-" + i;
+
+  let metaParts = [];
+  if (ex.sets) metaParts.push(ex.sets + " sets");
+  if (ex.reps) metaParts.push("× " + ex.reps);
+  if (ex.unit) metaParts.push("× " + ex.unit);
+
+  let tagsHtml = "";
+  if (!isOpen && (log.weight || log.reps || log.time || log.distance)) {
+    tagsHtml = '<div class="ex-tags">';
+    if (log.weight)   tagsHtml += `<span class="ex-tag">${log.weight} lbs</span>`;
+    if (log.reps)     tagsHtml += `<span class="ex-tag">×${log.reps}</span>`;
+    if (log.time)     tagsHtml += `<span class="ex-tag">${log.time}</span>`;
+    if (log.distance) tagsHtml += `<span class="ex-tag">${log.distance}</span>`;
+    tagsHtml += '</div>';
+  }
+
+  row.innerHTML = `
+    <div class="ex-row-inner">
+      <div class="ex-content">
+        <div class="ex-name${log.completed ? " struck" : ""}">${ex.name}</div>
+        <div class="ex-meta">${metaParts.join(" ")}</div>
+        ${ex.note ? `<div class="ex-note">// ${ex.note}</div>` : ""}
+        ${tagsHtml}
+      </div>
+      <div class="ex-check-wrap">
+        <div class="ex-checkbox${log.completed ? " checked" : ""}" id="ex-chk-${i}">${log.completed ? "✓" : ""}</div>
+        <span class="ex-arrow">${isOpen ? "▲" : "▼"}</span>
+      </div>
+    </div>
+  `;
+  row.onclick = () => toggleEx(i);
+  container.appendChild(row);
+
+  // Expand panel
+  const panel = document.createElement("div");
+  panel.className = "ex-expand" + (isOpen ? " open" : "");
+  panel.id = "ex-panel-" + i;
+  panel.onclick = e => e.stopPropagation();
+
+  let fieldsHtml = '<div class="field-grid">';
+  if (!ex.isRun && !ex.isTime) {
+    fieldsHtml += `
+      <div>
+        <label class="field-label">WEIGHT (lbs)</label>
+        <input class="field" type="number" inputmode="numeric" placeholder="—" value="${log.weight || ""}" onchange="setExLog(${i},'weight',this.value)">
+      </div>
+      <div>
+        <label class="field-label">REPS</label>
+        <input class="field" type="number" inputmode="numeric" placeholder="—" value="${log.reps || ""}" onchange="setExLog(${i},'reps',this.value)">
+      </div>
+    `;
+  }
+  if (ex.isRun) {
+    fieldsHtml += `
+      <div>
+        <label class="field-label">TIME (m:ss)</label>
+        <input class="field" type="text" inputmode="decimal" placeholder="25:00" value="${log.time || ""}" onchange="setExLog(${i},'time',this.value)">
+      </div>
+      <div>
+        <label class="field-label">DISTANCE</label>
+        <input class="field" type="text" placeholder="2.0 mi" value="${log.distance || ""}" onchange="setExLog(${i},'distance',this.value)">
+      </div>
+    `;
+  }
+  if (ex.isTime) {
+    fieldsHtml += `
+      <div>
+        <label class="field-label">HELD (m:ss)</label>
+        <input class="field" type="text" inputmode="decimal" placeholder="1:30" value="${log.time || ""}" onchange="setExLog(${i},'time',this.value)">
+      </div>
+    `;
+  }
+  fieldsHtml += '</div>';
+  fieldsHtml += `
+    <div style="margin-bottom:14px;">
+      <label class="field-label">NOTES</label>
+      <textarea class="field" placeholder="Form, feelings, PRs..." onchange="setExLog(${i},'notes',this.value)">${log.notes || ""}</textarea>
+    </div>
+    <button class="${log.completed ? "btn" : "btn-solid"}" onclick="toggleComplete(${i})">
+      ${log.completed ? "Mark Incomplete" : "✓ Mark Complete"}
+    </button>
+  `;
+  panel.innerHTML = fieldsHtml;
+  container.appendChild(panel);
+}
+
+function toggleEx(i) {
+  openExIdx = openExIdx === i ? null : i;
+  renderWorkout();
+}
+
+function toggleComplete(i) {
+  const log = getExLog(i);
+  setExLog(i, "completed", !log.completed);
+  openExIdx = null;
+  renderWorkout();
+}
+
+function setFeel(val) {
+  const sk = sessionKey();
+  if (!state.sessions[sk]) state.sessions[sk] = {};
+  state.sessions[sk].feel = val;
+  saveState();
+  document.querySelectorAll(".feel-btn").forEach(btn => {
+    btn.classList.toggle("sel", parseInt(btn.dataset.feel) === val);
+  });
+}
+
+function updateSessionNotes(val) {
+  const sk = sessionKey();
+  if (!state.sessions[sk]) state.sessions[sk] = {};
+  state.sessions[sk].notes = val;
+  saveState();
+}
+
+// ── BENCHMARKS ───────────────────────────────────────────────────────────────
+
+function renderBenchmarks() {
+  // Standards grid
+  const grid = document.getElementById("standards-grid");
+  grid.innerHTML = "";
+  ACFT_STANDARDS.forEach(s => {
+    const card = document.createElement("div");
+    card.className = "standard-card";
+    const display = s.unit === "sec" ? fmtTime(s.minimum) : s.minimum;
+    const unitLabel = s.unit === "sec" ? "min time" : s.unit;
+    card.innerHTML = `<div class="standard-event">${s.event}</div><div class="standard-val">${display}</div><div class="standard-unit">${unitLabel}</div>`;
+    grid.appendChild(card);
+  });
+
+  // Form fields
+  const formFields = document.getElementById("bench-form-fields");
+  formFields.innerHTML = "";
+  ACFT_STANDARDS.forEach(s => {
+    const ph = s.unit === "sec" ? fmtTime(s.minimum) : String(s.minimum);
+    const unitLabel = s.unit === "sec" ? "m:ss" : s.unit;
+    const div = document.createElement("div");
+    div.style.marginBottom = "14px";
+    div.innerHTML = `
+      <label class="field-label">${s.event} (${unitLabel})</label>
+      <input class="field" type="text" inputmode="decimal" placeholder="${ph}" id="bf-${s.event.replace(/\s/g,'-')}">
+    `;
+    formFields.appendChild(div);
+  });
+
+  // History
+  renderBenchmarkHistory();
+}
+
+function toggleBenchForm() {
+  const form = document.getElementById("bench-form");
+  const btn = document.getElementById("log-test-btn");
+  const isOpen = form.classList.contains("open");
+  form.classList.toggle("open", !isOpen);
+  btn.textContent = isOpen ? "+ Log Mock Test" : "Cancel";
+  btn.className = isOpen ? "btn-solid" : "btn";
+  if (isOpen) btn.style.marginBottom = "0";
+}
+
+function saveBenchmark() {
+  const entry = { date: new Date().toLocaleDateString() };
+  ACFT_STANDARDS.forEach(s => {
+    const id = "bf-" + s.event.replace(/\s/g, "-");
+    const el = document.getElementById(id);
+    if (el && el.value) entry[s.event] = el.value;
+  });
+  const notesEl = document.getElementById("bench-notes");
+  if (notesEl.value) entry.notes = notesEl.value;
+  state.benchmarks.push(entry);
+  saveState();
+  // Reset form
+  ACFT_STANDARDS.forEach(s => {
+    const el = document.getElementById("bf-" + s.event.replace(/\s/g, "-"));
+    if (el) el.value = "";
+  });
+  notesEl.value = "";
+  toggleBenchForm();
+  renderBenchmarkHistory();
+}
+
+function renderBenchmarkHistory() {
+  const container = document.getElementById("benchmark-history");
+  container.innerHTML = "";
+  if (!state.benchmarks.length) {
+    container.innerHTML = '<div class="empty">NO TESTS YET</div>';
+    return;
+  }
+  [...state.benchmarks].reverse().forEach((b, i, arr) => {
+    const testNum = arr.length - i;
+    const card = document.createElement("div");
+    card.className = "bench-card";
+    let html = `<div class="bench-card-title">TEST #${testNum} — ${b.date}</div>`;
+    ACFT_STANDARDS.forEach(s => {
+      const raw = b[s.event];
+      if (!raw) return;
+      const val = s.unit === "sec" ? parseTime(raw) : parseFloat(raw);
+      if (!val) return;
+      const passed = s.lowerIsBetter ? val <= s.minimum : val >= s.minimum;
+      const pct = s.lowerIsBetter
+        ? Math.min(100, Math.max(0, ((s.minimum - val) / (s.minimum - s.target)) * 100))
+        : Math.min(100, (val / s.target) * 100);
+      const display = s.unit === "sec" ? fmtTime(val) : raw;
+      html += `
+        <div class="bench-row">
+          <span class="bench-event">${s.event}</span>
+          <span class="bench-val">${display} ${passed ? "✓" : "✗"}</span>
+        </div>
+        <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${passed?"#000":"#888"}"></div></div>
+        <div style="margin-bottom:10px;"></div>
+      `;
+    });
+    if (b.notes) html += `<div class="bench-notes">${b.notes}</div>`;
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
+}
+
+// ── HISTORY ──────────────────────────────────────────────────────────────────
+
+function renderHistory() {
+  const container = document.getElementById("history-list");
+  container.innerHTML = "";
+  const entries = Object.entries(state.sessions);
+  if (!entries.length) {
+    container.innerHTML = '<div class="empty">NO SESSIONS YET</div>';
+    return;
+  }
+  const feels = ["💀","😓","😐","💪","🔥"];
+  [...entries].reverse().forEach(([key, s]) => {
+    const parts = key.match(/p(\d)-d(\d)-w(\d+)/);
+    if (!parts) return;
+    const [, ph, dy, wk] = parts;
+    const tmpl = WEEK_TEMPLATES[ph]?.[dy];
+    if (!tmpl) return;
+    const exs = s.exercises || {};
+    const done = Object.values(exs).filter(e => e.completed).length;
+
+    const card = document.createElement("div");
+    card.className = "hist-card";
+    let html = `
+      <div class="hist-header">
+        <div>
+          <div class="hist-title">Ph ${ph} · Wk ${wk} · ${tmpl.day}</div>
+          <div class="hist-sub">${tmpl.label}</div>
+        </div>
+        <div>
+          ${s.feel ? `<div class="hist-feel">${feels[s.feel - 1]}</div>` : ""}
+          <div class="hist-done">${done} done</div>
+        </div>
+      </div>
+    `;
+    Object.entries(exs).forEach(([idx, ex]) => {
+      const name = tmpl.exercises[idx]?.name;
+      if (!name) return;
+      html += `<div class="hist-ex${ex.completed ? "" : " incomplete"}">
+        <span>${ex.completed ? "✓" : "○"} ${name}</span>
+        ${ex.weight ? `<span class="hist-ex-val">${ex.weight}lbs</span>` : ""}
+        ${ex.reps ? `<span>×${ex.reps}</span>` : ""}
+        ${ex.time ? `<span class="hist-ex-val">${ex.time}</span>` : ""}
+        ${ex.distance ? `<span>${ex.distance}</span>` : ""}
+      </div>`;
+    });
+    if (s.notes) html += `<div class="hist-notes">${s.notes}</div>`;
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+
+loadState();
+document.getElementById("week-num").textContent = state.currentWeek;
+renderWorkout();
+</script>
+</body>
+</html>
