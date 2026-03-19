@@ -115,6 +115,20 @@
   .modal-item.selected .modal-item-sub { color: #ccc; }
   .modal-check { font-size: 22px; font-weight: bold; }
 
+  /* INFO BUTTON */
+  .ex-info-btn { background: transparent; border: 2px solid #bbb; color: #777; width: 38px; height: 38px; font-size: 18px; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; border-radius: 50%; }
+  .ex-info-btn:active { border-color: #000; color: #000; background: #f0f0f0; }
+
+  /* INFO OVERLAY */
+  .info-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 300; display: none; align-items: flex-end; }
+  .info-overlay.open { display: flex; }
+  .info-panel { background: #fff; border-top: 3px solid #000; width: 100%; max-width: 480px; margin: 0 auto; padding: 20px 20px 28px; max-height: 82vh; overflow-y: auto; }
+  .info-ex-name { font-size: 22px; font-weight: bold; letter-spacing: 2px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px solid #000; }
+  .info-section-label { font-size: 11px; letter-spacing: 3px; font-weight: bold; color: #555; margin-bottom: 8px; }
+  .info-text { font-size: 15px; line-height: 1.65; color: #111; margin-bottom: 20px; }
+  .info-weight-box { border: 2px solid #000; padding: 14px; background: #f8f8f8; font-size: 15px; line-height: 1.65; }
+  .info-close-btn { margin-top: 20px; background: #000; color: #fff; border: 2px solid #000; padding: 14px; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; width: 100%; font-weight: bold; cursor: pointer; font-family: 'Courier New', Courier, monospace; }
+
   /* BOTTOM NAV */
   #bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #fff; border-top: 3px solid #000; display: flex; z-index: 100; }
   .nav-btn { flex: 1; padding: 14px 4px 12px; background: #fff; border: none; border-right: 2px solid #000; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; letter-spacing: 1px; color: #888; text-transform: uppercase; }
@@ -235,6 +249,18 @@
   </div>
 </div>
 
+<!-- EXERCISE INFO OVERLAY -->
+<div class="info-overlay" id="info-overlay" onclick="closeInfoOutside(event)">
+  <div class="info-panel">
+    <div class="info-ex-name" id="info-ex-name"></div>
+    <div class="info-section-label">HOW TO PERFORM</div>
+    <div class="info-text" id="info-how"></div>
+    <div class="info-section-label">WEIGHT TARGETS</div>
+    <div class="info-weight-box" id="info-weight"></div>
+    <button class="info-close-btn" onclick="closeExInfo()">Close</button>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <nav id="bottom-nav">
   <button class="nav-btn active" id="nav-workout" onclick="switchTab('workout')">
@@ -249,6 +275,103 @@
 </nav>
 
 <script>
+// ── EXERCISE INFO ─────────────────────────────────────────────────────────────
+
+const EXERCISE_INFO = {
+  "Deadlift": {
+    how: "Stand with feet hip-width apart, bar over mid-foot. Hinge at hips, grip bar just outside your legs. Brace your core hard, chest up, neutral spine. Drive through your heels, push the floor away. Lock out hips fully at the top — don't hyperextend. Lower controlled by hinging back at the hips.",
+    weight: "Phase 1 (form focus): 65–95 lbs\nPhase 2 (build): 100–120 lbs\nPhase 3 (peak): 140+ lbs × 3\nACFT minimum: 140 lbs. Add 5–10 lbs/week when all reps are clean.",
+  },
+  "Romanian Deadlift": {
+    how: "Start standing with bar or dumbbells at hip height. Keep a slight bend in the knees throughout. Hinge at hips, pushing them back as the bar traces close to your legs. Lower until you feel a deep hamstring stretch (roughly mid-shin), then drive hips forward to return. Keep your back flat the entire time.",
+    weight: "Use 50–60% of your deadlift weight. If deadlifting 100 lbs, use 50–60 lbs here. Focus is hamstring stretch and hip hinge pattern — not max loading.",
+  },
+  "Goblet Squat": {
+    how: "Hold a dumbbell or kettlebell vertically at your chest with both hands. Stand feet shoulder-width, toes slightly out. Squat as deep as possible keeping your chest tall and elbows inside your knees at the bottom. Drive through your heels to stand. Pause 1–2 seconds at bottom if prescribed.",
+    weight: "Phase 1: 20–35 lbs\nPhase 2: 35–50 lbs\nAdd weight when you can hit all reps with a full-depth pause at the bottom. Prioritize depth over load.",
+  },
+  "Farmer Carry": {
+    how: "Pick up heavy dumbbells or kettlebells, one in each hand. Stand tall — shoulders back and down, core tight, neck neutral. Walk at a controlled pace without leaning side-to-side. At the turn, pivot and return. Set down only at the designated end point.",
+    weight: "Phase 1: 35–45 lbs per hand\nPhase 2: 45–60 lbs per hand\nPhase 3: 55–70 lbs per hand\nHeavier carries = direct ACFT transfer. Go as heavy as form allows.",
+  },
+  "Easy Run": {
+    how: "Conversational pace — you should be able to speak in full sentences. Run upright with a slight forward lean, midfoot strike under your hips, arms relaxed at 90°. Breathe through your nose if possible. If you're gasping, slow down.",
+    weight: "Bodyweight only. Target pace: ~12–13 min/mile. Heart rate 130–150 bpm. This is aerobic base building — never push hard on easy days.",
+  },
+  "Plank Hold": {
+    how: "Forearms on the ground, elbows directly under shoulders. Body forms a straight line from head to heel — squeeze your glutes, brace your abs, don't let hips sag or pike up. Breathe steadily. If your form breaks, stop the clock.",
+    weight: "Bodyweight. ACFT minimum: 2:09 (129 sec). Target: 2:30+. To progress: add a 10–25 lb plate on your mid-back once 2:30 is comfortable.",
+  },
+  "Dead Bugs": {
+    how: "Lie on your back, arms pointing straight up at the ceiling, knees bent 90° directly over your hips. Press your lower back firmly into the floor. Simultaneously lower one arm overhead and the opposite leg toward the floor. Return and repeat on the other side. Move slowly and deliberately.",
+    weight: "Bodyweight to start. Progress by holding 5–10 lb dumbbells in each hand. The rep count is per side.",
+  },
+  "Hollow Body Hold": {
+    how: "Lie on your back and press your lower back into the floor. Lift your shoulders and straight legs slightly off the ground, arms extended overhead. Your body should form a shallow 'banana' shape. Hold your breath briefly, then breathe steadily. If lower back lifts off the floor, bend your knees slightly.",
+    weight: "Bodyweight. Regression: bend knees to 90°. Progression: small hollow rock (rocking back and forth) or hold a light med ball overhead.",
+  },
+  "Hand-Release Push-Ups": {
+    how: "Lower your chest fully to the floor in a push-up. At the bottom, lift your hands completely off the ground — fully releasing them. Replace your hands and push back up as one rigid unit from head to heel. No worming — hips and chest must rise together.",
+    weight: "Bodyweight only. ACFT minimum: 10 reps. Target: 20+ reps. Track max reps on your final set each week to monitor progress.",
+  },
+  "Dumbbell Rows": {
+    how: "Hinge forward roughly 45° with a slight knee bend. One hand braces on your knee or a bench. Pull the dumbbell toward your hip, keeping your elbow close to your body. Squeeze your shoulder blade in at the top. Lower the weight fully and with control.",
+    weight: "Phase 1: 20–30 lbs per hand\nPhase 2: 30–40 lbs per hand\nShould feel challenging by rep 8–10. If rep 1 is hard, the weight is too heavy.",
+  },
+  "Overhead Press": {
+    how: "Hold dumbbells at shoulder height, palms facing forward. Stand tall or sit upright. Press both dumbbells straight overhead until your arms are locked out. Lower controlled back to shoulder height. Keep your core braced — don't arch your lower back to finish the rep.",
+    weight: "Phase 1: 15–25 lbs per hand\nPhase 2: 25–35 lbs per hand\nPrioritize strict form. This supports shoulder health for push-ups and the ACFT.",
+  },
+  "Band Pull-Aparts": {
+    how: "Hold a resistance band at chest height with both hands, arms straight in front of you. Pull the band apart until it touches your chest, squeezing your shoulder blades together at the end. Hold 1 second at full stretch. Return controlled — don't let it snap back.",
+    weight: "Light resistance band. Should feel a real burn in your rear delts and upper back by rep 12–15. Progress to medium band when reps get easy.",
+  },
+  "Med Ball Chest Pass (10lb)": {
+    how: "Stand 3–4 feet from a solid wall, holding a 10 lb med ball at chest height. Explosively push the ball into the wall as hard and fast as possible — like a chest pass. Catch the rebound and immediately repeat. Every rep should be max effort.",
+    weight: "Fixed: 10 lb med ball (ACFT standard weight). Focus entirely on power and explosiveness per rep.",
+  },
+  "Med Ball Overhead Slam": {
+    how: "Hold the med ball with both hands overhead, fully extended. Simultaneously slam the ball down as hard as possible while dropping into a squat. Catch on the bounce or pick it up and reset. This should be a full-body explosive movement — not just arms.",
+    weight: "10–20 lbs. Lighter = more speed and power expression. Heavier = more strength. For ACFT power throw prep, stay at 10–15 lbs and focus on maximum velocity.",
+  },
+  "Shuttle Sprints": {
+    how: "Set two cones or markers 20 meters apart. Sprint at full speed from one cone to the other, touch the line or ground, then sprint back. That is one rep. Stay low in your turns and accelerate hard out of each change of direction. Full rest between sets.",
+    weight: "Bodyweight. Rest: 60 seconds between sets. These simulate the SDC sprint legs — practice quick direction changes.",
+  },
+  "Sled Drag Sub": {
+    how: "Substitute for the ACFT sled drag (90 lbs, 25m backward): loop a heavy resistance band around a pole at ankle height, grip both ends, and walk backward pulling against the resistance. Alternatively, load weight plates on a towel and drag it backward. Stay low with powerful leg drives.",
+    weight: "Resistance should be challenging — simulating roughly 90 lbs of sled resistance. Increase band resistance or plate load as you get stronger.",
+  },
+  "Lateral Shuffles": {
+    how: "Start in an athletic stance — knees bent, weight on balls of feet, hips low. Shuffle sideways by pushing off the outside foot, never crossing your feet. Maintain your low position throughout — don't stand up between shuffles. Touch the cone at each end.",
+    weight: "Bodyweight. Keep hips below shoulder height at all times. This trains the SDC lateral movement directly.",
+  },
+  "Tempo Run": {
+    how: "Run at a 'comfortably hard' pace — you can speak in broken phrases but not full sentences. Maintain upright posture and a quick turnover. This pace should feel sustainable for 15–20 minutes but definitely not easy. Don't start too fast.",
+    weight: "Bodyweight. Target pace: ~10–11 min/mile. Heart rate ~160–175 bpm. Builds aerobic threshold critical for the 2-mile run.",
+  },
+  "SDC Circuit": {
+    how: "The full Sprint-Drag-Carry sequence: (1) Sprint 25m forward, (2) Drag a 90 lb sled 25m backward, (3) Lateral shuffle 25m in each direction (50m total), (4) Farmer Carry 40 lbs/hand 25m each way (50m total), (5) Sprint 25m to finish. No pausing between events.",
+    weight: "Sled drag: 90 lbs (use heavy resistance band as sub). Farmer Carry: 40 lbs per hand. Target time: under 3:00. ACFT minimum: 3:00.",
+  },
+  "SDC Circuit (full)": {
+    how: "Full test-intensity SDC: (1) Sprint 25m, (2) Drag 90 lb sled 25m backward, (3) Lateral shuffle 25m each direction, (4) Farmer Carry 40 lbs/hand 25m each way, (5) Sprint 25m finish. Perform at near-ACFT intensity. Time each attempt.",
+    weight: "ACFT exact standards — Sled: 90 lbs, Farmers: 40 lbs per hand. Goal: sub-2:30. ACFT minimum: 3:00.",
+  },
+  "Med Ball Power Throw": {
+    how: "Stand at a line with a 10 lb med ball held at your hips. Step forward and explosively throw the ball as far as possible overhead and behind you (backward overhead toss), or forward as a standing chest pass depending on your ACFT prep. Combine full-body hip drive, core rotation, and arm power.",
+    weight: "Fixed: 10 lb med ball (ACFT standard). Track distance each session. ACFT minimum: 4.5m. Target: 6.0m+.",
+  },
+  "Sprint Intervals": {
+    how: "All-out effort for 25 meters. Start from a standing position or from push-up position for ACFT simulation. Drive your knees high, pump your arms aggressively, and reach full speed as quickly as possible. Full recovery (90+ seconds) between sprints — if speed drops, rest longer.",
+    weight: "Bodyweight. Quality is everything here — if you're not sprinting at near-max speed, you need more rest.",
+  },
+  "2-Mile Run": {
+    how: "Run at an even or negative-split pace — don't go out too fast. Target roughly 10:30/mile. When fatigued in miles 1.5–2, focus on posture (stand tall), relaxed shoulders, and controlled breathing. Push hard on the final 400m only.",
+    weight: "Bodyweight. ACFT minimum: 21:00. Target: 18:00–19:00. Practice wearing any gear you'll wear on test day.",
+  },
+};
+
 // ── DATA ──────────────────────────────────────────────────────────────────────
 
 const PHASES = [
@@ -574,6 +697,7 @@ function renderExRow(container, ex, i) {
       <div class="ex-check-wrap">
         <div class="ex-checkbox${log.completed ? " checked" : ""}" id="ex-chk-${i}">${log.completed ? "✓" : ""}</div>
         <span class="ex-arrow">${isOpen ? "▲" : "▼"}</span>
+        <button class="ex-info-btn" onclick="openExInfo(${i},event)" title="How to perform">ⓘ</button>
       </div>
     </div>
   `;
@@ -813,6 +937,32 @@ function renderHistory() {
     card.innerHTML = html;
     container.appendChild(card);
   });
+}
+
+// ── EXERCISE INFO OVERLAY ─────────────────────────────────────────────────────
+
+function openExInfo(idx, e) {
+  e.stopPropagation();
+  const ex = getTmpl().exercises[idx];
+  const info = EXERCISE_INFO[ex.name];
+  document.getElementById("info-ex-name").textContent = ex.name;
+  document.getElementById("info-how").textContent = info
+    ? info.how
+    : "Perform the exercise with controlled form. Consult a trainer for technique guidance.";
+  document.getElementById("info-weight").textContent = info
+    ? info.weight
+    : (ex.note || "Use a weight that is challenging but allows full range of motion.");
+  document.getElementById("info-overlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeExInfo() {
+  document.getElementById("info-overlay").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function closeInfoOutside(e) {
+  if (e.target === document.getElementById("info-overlay")) closeExInfo();
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
