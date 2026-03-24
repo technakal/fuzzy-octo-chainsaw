@@ -498,12 +498,14 @@ function loadState() {
   } catch(e) {}
 }
 
-function saveState() {
+function saveState(quiet) {
   try {
     localStorage.setItem(SK, JSON.stringify(state));
-    const f = document.getElementById("save-flash");
-    f.style.display = "inline";
-    setTimeout(() => f.style.display = "none", 1200);
+    if (!quiet) {
+      const f = document.getElementById("save-flash");
+      f.style.display = "inline";
+      setTimeout(() => f.style.display = "none", 1200);
+    }
   } catch(e) {}
 }
 
@@ -965,9 +967,49 @@ function closeInfoOutside(e) {
   if (e.target === document.getElementById("info-overlay")) closeExInfo();
 }
 
+// ── AUTO-ADVANCE ──────────────────────────────────────────────────────────────
+
+function phaseForWeek(week) {
+  if (week <= 5) return 1;
+  if (week <= 11) return 2;
+  return 3;
+}
+
+function isSessionComplete(phase, day, week) {
+  const key = "p" + phase + "-d" + day + "-w" + week;
+  const sess = state.sessions[key] || {};
+  const tmpl = WEEK_TEMPLATES[phase]?.[day];
+  if (!tmpl || tmpl.exercises.length === 0) return false;
+  const done = Object.values(sess.exercises || {}).filter(e => e.completed).length;
+  return done === tmpl.exercises.length;
+}
+
+function autoAdvanceWorkout() {
+  if (!isSessionComplete(state.currentPhase, state.currentDay, state.currentWeek)) return;
+
+  let day = state.currentDay;
+  let week = state.currentWeek;
+  const totalDays = WEEK_TEMPLATES[state.currentPhase].length;
+
+  if (day < totalDays - 1) {
+    day++;
+  } else if (week < 16) {
+    day = 0;
+    week++;
+  } else {
+    return; // program complete — stay put
+  }
+
+  state.currentDay = day;
+  state.currentWeek = week;
+  state.currentPhase = phaseForWeek(week);
+  saveState(true);
+}
+
 // ── INIT ─────────────────────────────────────────────────────────────────────
 
 loadState();
+autoAdvanceWorkout();
 document.getElementById("week-num").textContent = state.currentWeek;
 renderWorkout();
 </script>
